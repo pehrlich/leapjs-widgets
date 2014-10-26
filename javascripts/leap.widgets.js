@@ -6,6 +6,7 @@
   var KNOB_COLOR_ACTIVE = 0x81d41d;
 
   var BACKGROUND_COLOR = 0x000000;
+  var flags = {innerView:false, vrMode:false, alreadyChangeView:false, playMovie:false , temp:false };
 
   window.LeapWidgets = function (scene) {
     this.scene = scene;
@@ -21,11 +22,19 @@
         new THREE.Euler(Math.PI / 2, 0, 0)
     );
     var boneWidthDefault = 10; // TODO not returned by recorder yet.
-    Leap.loop({
+    //Leap.loop({optimizeHMD: true}, function(frame){ //... });
+	Leap.loop({optimizeHMD: true},
+	  {
       frame: function() {
         widgets.update();
         scene.simulate();
-        renderer.render(scene, camera);
+		if(flags.vrMode===true)
+		{
+			vrControls.update();
+			vrEffect.render( scene, camera );
+		}
+	else
+		renderer.render( scene, camera ); 
       },
       hand: function (hand) {
 
@@ -54,6 +63,13 @@
 
         });
       }
+    })
+    .use('transform', {
+      quaternion: (new THREE.Quaternion).setFromEuler(
+        new THREE.Euler( Math.PI * -0.3, 0, Math.PI, 'ZXY' )
+      ),
+      position: new THREE.Vector3(0,120,-20),
+      scale: 1
     })
       // these two LeapJS plugins, handHold and handEntry are available from leapjs-plugins, included above.
       // handHold provides hand.data
@@ -131,13 +147,6 @@
         });
 
       });
-    })
-    .use('playback', {
-      // This is a compressed JSON file of preprecorded frame data
-      recording: sampleRecording,
-      // How long, in ms, between repeating the recording.
-      timeBetweenLoops: 2000,
-      pauseOnHand: true
     })
     .connect();
 
@@ -349,4 +358,13 @@
       slider.lastvalue = value;
     });
   };
+	//omri add fir VR 
+	window.addEventListener("keypress", function(e) {
+		if (e.charCode == 'f'.charCodeAt(0)) 
+		{
+			console.log('try to VR');
+			flags.vrMode = !flags.vrMode ;
+			vrEffect.setFullScreen( flags.vrMode );
+		}
+	}, false);  
 })();
